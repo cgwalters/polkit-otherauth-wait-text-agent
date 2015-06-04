@@ -296,6 +296,8 @@ otherauth_listener_initiate_authentication (PolkitAgentListener  *_listener,
   GSimpleAsyncResult *simple;
   PolkitIdentity *identity;
   char *line = NULL;
+  ssize_t r;
+  size_t n;
 
   simple = g_simple_async_result_new (G_OBJECT (listener),
                                       callback,
@@ -306,7 +308,7 @@ otherauth_listener_initiate_authentication (PolkitAgentListener  *_listener,
 
   fprintf (listener->tty, "\x1B[1;31m");
   fprintf (listener->tty,
-           "==== AUTHENTICATING FOR %s ===\n",
+           "(not really) AUTHENTICATING: %s \n",
            action_id);
   fprintf (listener->tty, "\x1B[0m");
   fprintf (listener->tty,
@@ -343,10 +345,17 @@ otherauth_listener_initiate_authentication (PolkitAgentListener  *_listener,
       g_free (s);
     }
 
-  fprintf (listener->tty, "Your cookie is %s: Press Return to see if you won the authentication race!\n",
+  fprintf (listener->tty, "COOKIE: %s\nPress Return to see if you won the authentication race!\n",
            cookie);
-  (void) getline (&line, NULL, listener->tty);
+  r = getline (&line, &n, stdin);
+  if (r < 0)
+    {
+      perror ("getline");
+    }
   free (line);
+
+  g_simple_async_result_complete_in_idle (simple);
+  g_object_unref (simple);
 
  out:
   ;
